@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Fortnite Chest Tracker</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts: Bebas Neue (Fortnite style typography) & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            fn: ['"Bebas Neue"', 'sans-serif'],
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            fnGold: {
+              300: '#ffe566',
+              400: '#ffd000',
+              500: '#e6a800',
+              600: '#b87700',
+            },
+            fnPurple: {
+              500: '#9d4edd',
+              600: '#7b2cbf',
+            },
+            fnCyan: {
+              400: '#00f5d4',
+              500: '#00bbf9',
+            }
+          },
+          boxShadow: {
+            'glow-gold': '0 0 25px -5px rgba(255, 208, 0, 0.45)',
+            'glow-cyan': '0 0 20px -3px rgba(0, 245, 212, 0.4)',
+            'glow-purple': '0 0 20px -3px rgba(157, 78, 221, 0.4)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Prevención estricta de zoom y selecciones accidentales en celulares táctiles */
+    * {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+    
+    body {
+      min-height: 100vh;
+      min-height: 100dvh;
+      background: radial-gradient(circle at 50% 0%, #171f38 0%, #0b0f19 80%);
+    }
+
+    /* Efecto de pulso numérico */
+    .count-pop {
+      animation: popEffect 0.16s ease-out;
+    }
+
+    @keyframes popEffect {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.15); filter: brightness(1.3); }
+      100% { transform: scale(1); }
+    }
+
+    /* Personalización de barra de scroll sutil */
+    ::-webkit-scrollbar {
+      width: 4px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans select-none antialiased overflow-x-hidden pb-8">
+
+  <!-- BARRA SUPERIOR / HEADER -->
+  <header class="w-full bg-slate-900/80 backdrop-blur-md border-b border-slate-800/80 px-4 py-3 sticky top-0 z-30 flex items-center justify-between">
+    <div class="flex items-center space-x-2.5">
+      <!-- Icono Cofre Dorado SVG -->
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-fnGold-400 to-amber-600 flex items-center justify-center shadow-glow-gold">
+        <svg class="w-5 h-5 text-slate-950 fill-current" viewBox="0 0 24 24">
+          <path d="M5 4h14a2 2 0 0 1 2 2v2H3V6a2 2 0 0 1 2-2zm-2 6h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V10zm8 2v3h2v-3h-2z"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="font-fn text-2xl tracking-wider text-white leading-none flex items-center gap-1.5">
+          CHEST TRACKER <span class="text-xs font-sans font-bold px-1.5 py-0.5 rounded bg-fnPurple-600/40 text-fnPurple-300 border border-fnPurple-500/30">FN</span>
+        </h1>
+        <p class="text-[10px] text-slate-400 font-medium tracking-tight">Contador de Tokens & Cofres</p>
+      </div>
+    </div>
+
+    <!-- Opciones / Feedback Háptico y Sonido -->
+    <div class="flex items-center space-x-1.5">
+      <!-- Toggle Sonido -->
+      <button id="soundToggleBtn" onclick="toggleSound()" class="p-2 rounded-xl bg-slate-800/90 text-slate-300 active:scale-90 transition border border-slate-700/60" title="Activar/Silenciar sonido">
+        <svg id="soundIconOn" class="w-4 h-4 text-fnCyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M11 5L6 9H2v6h4l5 4V5z"/>
+        </svg>
+        <svg id="soundIconOff" class="w-4 h-4 text-slate-500 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z m11.414-4l4 4m0-4l-4 4"/>
+        </svg>
+      </button>
+
+      <!-- Toggle Vibración -->
+      <button id="vibeToggleBtn" onclick="toggleHaptics()" class="p-2 rounded-xl bg-slate-800/90 text-slate-300 active:scale-90 transition border border-slate-700/60" title="Activar/Desactivar vibración">
+        <svg id="vibeIcon" class="w-4 h-4 text-fnGold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="flex-1 w-full max-w-md mx-auto px-4 py-3 flex flex-col space-y-3.5">
+
+    <!-- TARJETA: TOTAL ACUMULADO -->
+    <section class="bg-gradient-to-r from-slate-900/90 to-slate-800/90 rounded-2xl p-3.5 border border-slate-700/60 shadow-lg relative overflow-hidden flex items-center justify-between">
+      <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-fnGold-400/10 rounded-full blur-xl pointer-events-none"></div>
+      
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-fnGold-400/15 border border-fnGold-400/30 flex items-center justify-center text-fnGold-400">
+          <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20">
+            <path d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 6.477V16h2a1 1 0 110 2H7a1 1 0 110-2h2V6.477L6.237 7.582l1.715 5.349a1 1 0 01-.285 1.05A3.989 3.989 0 015 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1z"/>
+          </svg>
+        </div>
+        <div>
+          <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Total Acumulado</span>
+          <div class="flex items-baseline space-x-1.5">
+            <span id="totalDisplay" class="font-fn text-3xl text-fnGold-400 tracking-wider">0</span>
+            <span class="text-xs font-semibold text-slate-400">cofres</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Botón Reiniciar Todo -->
+      <button onclick="promptResetTotal()" class="px-2.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 active:scale-95 text-rose-400 border border-rose-500/20 text-xs font-semibold flex items-center gap-1 transition">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+        </svg>
+        Reset
+      </button>
+    </section>
+
+    <!-- TARJETA PRINCIPAL: ESTA PARTIDA (SESIÓN) -->
+    <section class="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 shadow-2xl flex flex-col items-center relative overflow-hidden backdrop-blur-xl">
+      <!-- Glow ambient background -->
+      <div class="absolute -top-12 left-1/2 -translate-x-1/2 w-48 h-48 bg-fnCyan-500/15 rounded-full blur-3xl pointer-events-none"></div>
+
+      <!-- Badge de partida actual -->
+      <div class="flex items-center justify-between w-full mb-2">
+        <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-slate-800/90 border border-slate-700/80">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          <span id="matchNumberLabel" class="text-xs font-bold text-slate-300 uppercase tracking-wide">Partida #1</span>
+        </div>
+
+        <span class="text-xs text-slate-400 font-medium">Esta partida</span>
+      </div>
+
+      <!-- Contador Gigante de Esta Partida -->
+      <div class="my-2 text-center py-2">
+        <div id="matchDisplay" class="font-fn text-8xl md:text-9xl text-white tracking-wider leading-none transition-transform drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]">
+          0
+        </div>
+        <div class="text-xs uppercase tracking-widest text-slate-400 font-semibold -mt-1">
+          Cofres en curso
+        </div>
+      </div>
+
+      <!-- BOTÓN GIGANTE: +1 COFRE -->
+      <button 
+        id="btnMainAdd"
+        onclick="addChest(1)"
+        class="w-full mt-2 py-5 px-6 rounded-2xl bg-gradient-to-b from-fnGold-400 via-fnGold-500 to-amber-600 text-slate-950 font-fn text-3xl tracking-wider shadow-glow-gold active:scale-95 transition-all duration-75 flex items-center justify-center space-x-3 border-t-2 border-white/50 active:brightness-90 cursor-pointer"
+      >
+        <!-- Icono cofre animado -->
+        <svg class="w-8 h-8 fill-current drop-shadow" viewBox="0 0 24 24">
+          <path d="M5 4h14a2 2 0 0 1 2 2v2H3V6a2 2 0 0 1 2-2zm-2 6h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V10zm8 2v3h2v-3h-2z"/>
+        </svg>
+        <span class="drop-shadow-sm">+1 COFRE</span>
+      </button>
+
+      <!-- BOTONES DE ACCIÓN RÁPIDA (Subfila: -1, +3, +5) -->
+      <div class="grid grid-cols-3 gap-2.5 w-full mt-3">
+        <!-- Restar 1 -->
+        <button 
+          onclick="removeChest()"
+          class="py-3 rounded-xl bg-slate-800/90 active:bg-slate-700/80 active:scale-90 text-rose-300 font-bold text-base border border-slate-700/60 shadow flex items-center justify-center space-x-1 transition"
+          title="Corregir si sumaste por error"
+        >
+          <span class="text-lg">−</span>
+          <span>1</span>
+        </button>
+
+        <!-- Sumar +3 (Búnker) -->
+        <button 
+          onclick="addChest(3)"
+          class="py-3 rounded-xl bg-slate-800/90 active:bg-slate-700/80 active:scale-90 text-fnCyan-400 font-bold text-base border border-slate-700/60 shadow flex items-center justify-center space-x-1 transition"
+          title="Búnker rápido (+3 cofres)"
+        >
+          <span>+3</span>
+          <span class="text-[10px] text-slate-400 font-normal">Búnker</span>
+        </button>
+
+        <!-- Sumar +5 (Zona densa / Bóveda) -->
+        <button 
+          onclick="addChest(5)"
+          class="py-3 rounded-xl bg-slate-800/90 active:bg-slate-700/80 active:scale-90 text-fnPurple-400 font-bold text-base border border-slate-700/60 shadow flex items-center justify-center space-x-1 transition"
+          title="Bóveda o PDI denso (+5 cofres)"
+        >
+          <span>+5</span>
+          <span class="text-[10px] text-slate-400 font-normal">Bóveda</span>
+        </button>
+      </div>
+
+      <!-- BOTÓN: TERMINAR / SIGUIENTE PARTIDA -->
+      <button 
+        onclick="finishCurrentMatch()"
+        class="w-full mt-4 py-3.5 px-4 rounded-xl bg-gradient-to-r from-fnCyan-500 to-fnPurple-600 active:scale-[0.98] text-white font-bold text-sm tracking-wide shadow-glow-cyan flex items-center justify-center space-x-2 transition border-t border-white/20"
+      >
+        <span>SIGUIENTE PARTIDA</span>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+        </svg>
+      </button>
+    </section>
+
+    <!-- HISTORIAL DE PARTIDAS -->
+    <section class="bg-slate-900/60 border border-slate-800/70 rounded-2xl p-4 flex flex-col">
+      <div class="flex items-center justify-between mb-2.5">
+        <div class="flex items-center space-x-2">
+          <span class="font-fn text-lg tracking-wider text-slate-200">HISTORIAL DE PARTIDAS</span>
+          <span id="historyBadge" class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">0 partidas</span>
+        </div>
+        <button id="clearHistoryBtn" onclick="clearHistory()" class="text-xs text-slate-400 hover:text-rose-400 transition font-medium hidden">
+          Limpiar
+        </button>
+      </div>
+
+      <!-- Contenedor de lista -->
+      <div id="historyList" class="flex flex-col space-y-2 max-h-52 overflow-y-auto pr-1">
+        <!-- Relleno dinámico -->
+        <div id="emptyHistoryMessage" class="py-6 text-center text-slate-500 text-xs">
+          Completa tu primera partida pulsando <br><strong class="text-slate-400">"Siguiente partida"</strong> para registrarla aquí.
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL DE CONFIRMACIÓN (RESET TOTAL) -->
+  <div id="confirmModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center px-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 max-w-xs w-full shadow-2xl text-center flex flex-col items-center">
+      <div class="w-12 h-12 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-400 flex items-center justify-center mb-3">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+      </div>
+      <h3 class="font-fn text-2xl text-white tracking-wide mb-1">¿REINICIAR TODO?</h3>
+      <p class="text-xs text-slate-400 leading-relaxed mb-4">
+        Se borrará el total acumulado, la partida en curso y todo el historial de cofres guardados.
+      </p>
+      <div class="grid grid-cols-2 gap-2 w-full">
+        <button onclick="closeResetModal()" class="py-2.5 rounded-xl bg-slate-800 text-slate-300 font-semibold text-xs active:scale-95 transition">
+          Cancelar
+        </button>
+        <button onclick="confirmResetAll()" class="py-2.5 rounded-xl bg-rose-600 text-white font-bold text-xs active:scale-95 transition shadow-lg shadow-rose-600/30">
+          Sí, borrar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICACIÓN -->
+  <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-slate-800/95 border border-slate-700 text-white text-xs px-4 py-2 rounded-full shadow-xl pointer-events-none opacity-0 transition-opacity duration-300 flex items-center space-x-1.5">
+    <span id="toastText">Acción realizada</span>
+  </div>
+
+  <!-- JAVASCRIPT: LÓGICA, AUDIO SINTETIZADO, LOCALSTORAGE Y VIBRACIÓN -->
+  <script>
+    // --- ESTADO PRINCIPAL ---
+    const STORAGE_KEY = 'fn_chest_counter_state_v1';
+
+    let state = {
+      currentMatch: 0,
+      totalChests: 0,
+      matchCount: 1,
+      history: [],
+      sound: true,
+      haptics: true
+    };
+
+    // --- CARGA Y PERSISTENCIA ---
+    function loadState() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          state = { ...state, ...parsed };
+        }
+      } catch (err) {
+        console.warn('Error loading localStorage', err);
+      }
+      renderUI();
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (err) {
+        console.warn('Error saving to localStorage', err);
+      }
+    }
+
+    // --- SÍNTESIS DE AUDIO CON WEB AUDIO API (Sin archivos externos) ---
+    let audioCtx = null;
+
+    function getAudioContext() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) {
+          audioCtx = new AudioContextClass();
+        }
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    // Sonido campana / cofre resplandeciente (+1)
+    function playTreasureChime() {
+      if (!state.sound) return;
+      try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+
+        // Tono 1 (brillante)
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.type = 'triangle';
+        osc1.frequency.setValueAtTime(587.33, now); // D5
+        osc1.frequency.exponentialRampToValueAtTime(1174.66, now + 0.12); // D6
+        gain1.gain.setValueAtTime(0.25, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+        osc1.connect(gain1);
+        gain1.connect(ctx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.22);
+
+        // Armónico de destello
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(1480, now + 0.04);
+        gain2.gain.setValueAtTime(0.2, now + 0.04);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.start(now + 0.04);
+        osc2.stop(now + 0.25);
+      } catch (e) {
+        // Ignorar fallas si la política de autoplay bloquea
+      }
+    }
+
+    // Sonido grave al restar (-1)
+    function playMinusClick() {
+      if (!state.sound) return;
+      try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(240, now);
+        osc.frequency.linearRampToValueAtTime(140, now + 0.08);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.09);
+      } catch (e) {}
+    }
+
+    // Fanfarria breve al terminar la partida
+    function playFinishMatchChime() {
+      if (!state.sound) return;
+      try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        const notes = [440, 554.37, 659.25, 880]; // A major arpeggio
+        notes.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          const startTime = now + (idx * 0.06);
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, startTime);
+          gain.gain.setValueAtTime(0.2, startTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.18);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(startTime);
+          osc.stop(startTime + 0.18);
+        });
+      } catch (e) {}
+    }
+
+    // --- HÁPTICA / VIBRACIÓN ---
+    function triggerHaptic(duration = 35) {
+      if (state.haptics && navigator.vibrate) {
+        try {
+          navigator.vibrate(duration);
+        } catch (e) {}
+      }
+    }
+
+    // --- ACCIONES DEL CONTADOR ---
+
+    // Sumar cofres (+1, +3, +5, etc.)
+    function addChest(amount = 1) {
+      state.currentMatch += amount;
+      state.totalChests += amount;
+      
+      triggerHaptic(amount > 1 ? [30, 40, 40] : 30);
+      playTreasureChime();
+      
+      saveState();
+      renderUI(true);
+    }
+
+    // Restar cofre (-1)
+    function removeChest() {
+      if (state.currentMatch <= 0 && state.totalChests <= 0) {
+        showToast("No tienes cofres para restar");
+        return;
+      }
+      
+      if (state.currentMatch > 0) {
+        state.currentMatch -= 1;
+      }
+      
+      if (state.totalChests > 0) {
+        state.totalChests -= 1;
+      }
+
+      triggerHaptic(18);
+      playMinusClick();
+      
+      saveState();
+      renderUI(true);
+    }
+
+    // Siguiente / Terminar Partida
+    function finishCurrentMatch() {
+      if (state.currentMatch === 0) {
+        showToast("Partida terminada con 0 cofres");
+      } else {
+        showToast(`¡Partida guardada con ${state.currentMatch} cofres!`);
+      }
+
+      // Añadir al inicio del historial
+      state.history.unshift({
+        matchNumber: state.matchCount,
+        chests: state.currentMatch,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      });
+
+      // Incrementar conteo de partidas y resetear contador actual
+      state.matchCount += 1;
+      state.currentMatch = 0;
+
+      triggerHaptic([40, 60, 40]);
+      playFinishMatchChime();
+
+      saveState();
+      renderUI();
+    }
+
+    // Limpiar sólo el historial
+    function clearHistory() {
+      state.history = [];
+      saveState();
+      renderUI();
+      showToast("Historial limpiado");
+    }
+
+    // Reiniciar Todo (Modal)
+    function promptResetTotal() {
+      document.getElementById('confirmModal').classList.remove('hidden');
+      document.getElementById('confirmModal').classList.add('flex');
+    }
+
+    function closeResetModal() {
+      document.getElementById('confirmModal').classList.add('hidden');
+      document.getElementById('confirmModal').classList.remove('flex');
+    }
+
+    function confirmResetAll() {
+      state.currentMatch = 0;
+      state.totalChests = 0;
+      state.matchCount = 1;
+      state.history = [];
+      saveState();
+      closeResetModal();
+      renderUI();
+      showToast("Todos los contadores han sido reiniciados");
+    }
+
+    // --- PREFERENCIAS (AUDIO & VIBE) ---
+    function toggleSound() {
+      state.sound = !state.sound;
+      saveState();
+      updateToggleIcons();
+      showToast(state.sound ? "Sonido activado" : "Sonido silenciado");
+      if (state.sound) playTreasureChime();
+    }
+
+    function toggleHaptics() {
+      state.haptics = !state.haptics;
+      saveState();
+      updateToggleIcons();
+      showToast(state.haptics ? "Vibración activada" : "Vibración desactivada");
+      if (state.haptics) triggerHaptic(40);
+    }
+
+    function updateToggleIcons() {
+      const soundOn = document.getElementById('soundIconOn');
+      const soundOff = document.getElementById('soundIconOff');
+      const vibeIcon = document.getElementById('vibeIcon');
+
+      if (state.sound) {
+        soundOn.classList.remove('hidden');
+        soundOff.classList.add('hidden');
+      } else {
+        soundOn.classList.add('hidden');
+        soundOff.classList.remove('hidden');
+      }
+
+      if (state.haptics) {
+        vibeIcon.classList.remove('text-slate-600');
+        vibeIcon.classList.add('text-fnGold-400');
+      } else {
+        vibeIcon.classList.remove('text-fnGold-400');
+        vibeIcon.classList.add('text-slate-600');
+      }
+    }
+
+    // --- TOAST NOTIFICATIONS ---
+    let toastTimeout = null;
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      const text = document.getElementById('toastText');
+      text.textContent = msg;
+      toast.classList.remove('opacity-0');
+      toast.classList.add('opacity-100');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('opacity-100');
+        toast.classList.add('opacity-0');
+      }, 2000);
+    }
+
+    // --- ACTUALIZACIÓN DE INTERFAZ (RENDER) ---
+    function renderUI(triggerAnimation = false) {
+      const matchDisplay = document.getElementById('matchDisplay');
+      const totalDisplay = document.getElementById('totalDisplay');
+      const matchNumberLabel = document.getElementById('matchNumberLabel');
+      const historyList = document.getElementById('historyList');
+      const historyBadge = document.getElementById('historyBadge');
+      const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+
+      // Actualizar números
+      matchDisplay.textContent = state.currentMatch;
+      totalDisplay.textContent = state.totalChests;
+      matchNumberLabel.textContent = `Partida #${state.matchCount}`;
+
+      // Animación de pop si se modificó el número
+      if (triggerAnimation) {
+        matchDisplay.classList.remove('count-pop');
+        void matchDisplay.offsetWidth; // Forzar reflow
+        matchDisplay.classList.add('count-pop');
+      }
+
+      // Historial
+      const histLength = state.history.length;
+      historyBadge.textContent = `${histLength} ${histLength === 1 ? 'partida' : 'partidas'}`;
+
+      if (histLength > 0) {
+        clearHistoryBtn.classList.remove('hidden');
+        historyList.innerHTML = state.history.map((item) => `
+          <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/40 text-xs">
+            <div class="flex items-center space-x-2">
+              <span class="w-6 h-6 rounded-lg bg-slate-700/80 flex items-center justify-center font-bold text-slate-300">
+                #${item.matchNumber}
+              </span>
+              <div>
+                <span class="font-semibold text-slate-200">Partida ${item.matchNumber}</span>
+                <span class="text-[10px] text-slate-500 block">${item.timestamp}</span>
+              </div>
+            </div>
+            <div class="flex items-center space-x-1 font-fn text-xl text-fnGold-400">
+              <span>${item.chests}</span>
+              <span class="text-[10px] font-sans font-medium text-slate-400">cofres</span>
+            </div>
+          </div>
+        `).join('');
+      } else {
+        clearHistoryBtn.classList.add('hidden');
+        historyList.innerHTML = `
+          <div id="emptyHistoryMessage" class="py-6 text-center text-slate-500 text-xs">
+            Completa tu primera partida pulsando <br><strong class="text-slate-400">"Siguiente partida"</strong> para registrarla aquí.
+          </div>
+        `;
+      }
+
+      updateToggleIcons();
+    }
+
+    // Inicializar al cargar
+    window.addEventListener('DOMContentLoaded', () => {
+      loadState();
+    });
+  </script>
+</body>
+</html>
